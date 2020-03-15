@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/local/bin/python3
 
 import uuid
 import datetime as dt
@@ -50,16 +50,17 @@ def print_header(tag = None):
     #оставим заготовку под вывод в html
 def print_line(line, align = "left", tag = None):
     switch_ = {"center": [1,1], "right":[2,0], "left":[0,2] }
-    line_width = len(line.strip())
     line = line.strip()
+    line_width = len(line)
+    
     if line_width > WIDTH:
         print("УВЕЛИЧИТЬ ШИРИНУ ВЫВОДА!")
     if tag is None:
         shifts_ = switch_[align]
         prefix = (WIDTH - 2 - line_width)//2# -2 боковые рамки
-        print_ = "|" + " " * (prefix) * shifts_[0] + line + " " * (prefix)* shifts_[1]
-        postfix_ = " "*(WIDTH-len(print_)) + "|"
-        print(print_ + postfix_)
+        print_ = f"|{' '*prefix * shifts_[0]}{line}{' ' * (prefix)* shifts_[1]}"
+        postfix_ = f'{" "*(WIDTH-len(print_))}|'
+        print(f"{print_}{postfix_}")
     else:
         pass
 #получаем код пользователя
@@ -135,12 +136,15 @@ def query_data(session, birthdate = None, height = None):
     query = session.query(Athlete).filter(query_Field < query_Condition).order_by(query_Field.desc(),Athlete.name.asc()).limit(1)
     ath_le_ = query.first() #меньше
         
+    if (not ath_le_) and (not ath_ge_):
+        print_line("Ошибка БД. Таблица атлетов пуста!")
+        return
     if not ath_le_:
         print_line(f"Ближайший: {ath_ge_.name}, {ath_ge_.birthdate}, {ath_ge_.height}")
         #если меньше никого нет, то ближайший - больше
     elif not ath_ge_:
         print_line(f"Ближайший: {ath_le_.name}, {ath_le_.birthdate}, {ath_le_.height}")
-        #если меньше никого нет, то ближайший - больше
+        #если больше никого нет, то ближайший - меньше
     else:
         query_gt_ = 0
         query_lt_ = 0
@@ -197,7 +201,12 @@ def print_athletes(id_data, session):
 
 
 def main():
-    session = connectDB()
+    try:
+        session = connectDB()
+    except:
+        print("Ошибка подключения к базе! Проверьте, а есть ли база в папке с модулями")
+        exit()
+        
     id_ = 0
     while not id_:
         id_ = request_data()
